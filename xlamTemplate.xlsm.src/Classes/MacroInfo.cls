@@ -4,13 +4,13 @@ Option Explicit
 
 ' 内容的にはTypeでも良いが，コンテナ（ディクショナリ）に入れる為にクラスにしている．
 
-Enum TM_ImageType
-  TM_IMageTypeNone    '画像設定がない場合 （デフォルト）
-  TM_ImageTypeMso    'MSOイメージのIDの場合
-  TM_ImageTypeEmbedded    '内部に埋め込まれた画像（PNG等）のIDの場合
-  TM_ImageTypeInternal    'シート内部OLEObjectの名前の場合
-  TM_ImageTypeInternalAutomatic    'シート内部OLEObjectの名前から自動設定された場合
-  TM_ImageTypeExternal    '外部ファイル名の場合
+Enum XT_ImageType
+  XT_IMageTypeNone    '画像設定がない場合 （デフォルト）
+  XT_ImageTypeMso    'MSOイメージのIDの場合
+  XT_ImageTypeEmbedded    '内部に埋め込まれた画像（PNG等）のIDの場合
+  XT_ImageTypeInternal    'シート内部OLEObjectの名前の場合
+  XT_ImageTypeInternalAutomatic    'シート内部OLEObjectの名前から自動設定された場合
+  XT_ImageTypeExternal    '外部ファイル名の場合
 End Enum
 
 
@@ -55,7 +55,7 @@ Public Image       As String
 
 '@Ignore EncapsulatePublicField
 '@VariableDescription アイコン画像のタイプ．
-Public ImageType  As TM_ImageType
+Public ImageType  As XT_ImageType
 
 '@Ignore EncapsulatePublicField
 '@VariableDescription ラベル文字列．省略された場合はnameが使用される．
@@ -84,7 +84,7 @@ Public Sub Clear()
   tag = ""
   Image = ""
   desc = ""
-  ImageType = TM_IMageTypeNone
+  ImageType = XT_IMageTypeNone
   label = ""
   category = ""
   onKey = ""
@@ -182,23 +182,23 @@ End Property
 
 
 Private Sub Class_Initialize()
-  ImageType = TM_IMageTypeNone
+  ImageType = XT_IMageTypeNone
 End Sub
 
 
 Public Property Get imageTypeString() As String
   Select Case ImageType
-    Case TM_ImageTypeEmbedded
+    Case XT_ImageTypeEmbedded
       imageTypeString = "埋め込み"
-    Case TM_ImageTypeExternal
+    Case XT_ImageTypeExternal
       imageTypeString = "外部ファイル"
-    Case TM_ImageTypeInternal
+    Case XT_ImageTypeInternal
       imageTypeString = "imageシート(手動設定)"
-    Case TM_ImageTypeInternalAutomatic
+    Case XT_ImageTypeInternalAutomatic
       imageTypeString = "imageシート(自動設定)"
-    Case TM_ImageTypeMso
+    Case XT_ImageTypeMso
       imageTypeString = "MSO"
-    Case TM_IMageTypeNone
+    Case XT_IMageTypeNone
       imageTypeString = "未設定"
   End Select
 End Property

@@ -23,18 +23,23 @@ End Sub
 
 
 ' idつきでxmlを作成する．
-Public Sub TM_DynMenu_getContent(control As IRibbonControl, ByRef returnedVal As Variant)
+Public Sub XT_DynMenu_getContent(control As IRibbonControl, ByRef returnedVal As Variant)
   returnedVal = CreateXML(control.tag)
   Ribbon.InvalidateControl control.id
 End Sub
 
 
-Public Sub TM_SB_getScreentip(control As IRibbonControl, ByRef returnedVal As Variant)
+Public Sub XT_SB_getScreentip(control As IRibbonControl, ByRef returnedVal As Variant)
   returnedVal = getInfo(control.tag).screenTip
 End Sub
 
 
-Public Sub TM_SB_getLabel(control As IRibbonControl, ByRef returnedVal As Variant)
+Public Sub XT_groupLabel(control As IRibbonControl, ByRef returnedVal As Variant)
+  returnedVal = ThisWorkbook.Name
+End Sub
+
+
+Public Sub XT_SB_getLabel(control As IRibbonControl, ByRef returnedVal As Variant)
   Dim info         As MacroInfo
   Set info = getInfo(control.tag)
   If info.label <> "" Then
@@ -45,19 +50,19 @@ Public Sub TM_SB_getLabel(control As IRibbonControl, ByRef returnedVal As Varian
 End Sub
 
 
-Public Sub TM_SB_getSupertip(control As IRibbonControl, ByRef returnedVal As Variant)
+Public Sub XT_SB_getSupertip(control As IRibbonControl, ByRef returnedVal As Variant)
   returnedVal = Replace(getInfo(control.tag).superTip, "||", vbCrLf)
 End Sub
 
 
-Public Sub TM_SB_getImage(control As IRibbonControl, ByRef returnedVal As Variant)
+Public Sub XT_SB_getImage(control As IRibbonControl, ByRef returnedVal As Variant)
   Dim info         As MacroInfo
   Set info = getInfo(control.tag)
   Select Case info.ImageType
-    Case TM_ImageTypeMso
+    Case XT_ImageTypeMso
       ' SB内ボタンからの場合はこちらに来る可能性あり．
       returnedVal = info.Image
-    Case TM_ImageTypeExternal
+    Case XT_ImageTypeExternal
       If FSO.FileExists(info.Image) Then
         On Error GoTo nnn:
         Set returnedVal = LoadPicture(info.Image)
@@ -65,7 +70,7 @@ Public Sub TM_SB_getImage(control As IRibbonControl, ByRef returnedVal As Varian
 nnn:
         returnedVal = "MacroDefault"    ' pictureが見つからない場合
       End If
-    'Case TM_IMageTypeNone
+    'Case XT_IMageTypeNone
     Case Else
       returnedVal = "MacroDefault"    ' 設定がないのでデフォルト
   End Select
@@ -73,7 +78,7 @@ End Sub
 
 
 ' 未登録なら表示しない
-Public Sub TM_SB_getVisible(control As IRibbonControl, ByRef returnedVal As Variant)
+Public Sub XT_SB_getVisible(control As IRibbonControl, ByRef returnedVal As Variant)
   Dim macro As String
   macro = GetSetting(APP, sec, control.tag, "")
   returnedVal = macro <> ""
@@ -81,7 +86,7 @@ End Sub
 
 
 ' 登録ボタンから実行する
-Public Sub TM_SB_onAction(control As IRibbonControl)
+Public Sub XT_SB_onAction(control As IRibbonControl)
   Dim macro As String
   macro = GetSetting(APP, sec, control.tag, "")
   If macro <> "" Then
@@ -92,13 +97,13 @@ Public Sub TM_SB_onAction(control As IRibbonControl)
       i = CLng(control.tag)
       Do
         SaveSetting APP, sec, CStr(i), GetSetting(APP, sec, CStr(i - 1), "")
-        Ribbon.InvalidateControl "TM_SB" & CStr(i)
+        Ribbon.InvalidateControl "XT_SB" & CStr(i)
         DoEvents
         i = i - 1
       Loop While i Mod 10 > 0
       SaveSetting APP, sec, CStr(i), macro
-      Ribbon.InvalidateControl "TM_SB" & CStr(i \ 10)
-      Ribbon.InvalidateControl "TM_SB" & CStr(i)
+      Ribbon.InvalidateControl "XT_SB" & CStr(i \ 10)
+      Ribbon.InvalidateControl "XT_SB" & CStr(i)
     End If
   End If
 End Sub
@@ -216,15 +221,15 @@ Private Function ButtonFromInfo(ByRef xmlDoc As DOMDocument30, ByRef info As Mac
     End If
 
     Select Case info.ImageType
-      Case TM_ImageTypeMso
+      Case XT_ImageTypeMso
         .setAttribute "imageMso", info.Image
-      Case TM_ImageTypeEmbedded
+      Case XT_ImageTypeEmbedded
         .setAttribute "image", info.Image
-      Case TM_ImageTypeExternal
-        .setAttribute "getImage", "TM_SB_getImage"
-      Case TM_ImageTypeInternal, TM_ImageTypeInternalAutomatic
-        .setAttribute "getImage", "TM_SB_getImage"
-      Case TM_IMageTypeNone
+      Case XT_ImageTypeExternal
+        .setAttribute "getImage", "XT_SB_getImage"
+      Case XT_ImageTypeInternal, XT_ImageTypeInternalAutomatic
+        .setAttribute "getImage", "XT_SB_getImage"
+      Case XT_IMageTypeNone
         .setAttribute "imageMso", "MacroDefault"
     End Select
   End With
@@ -295,13 +300,13 @@ Private Function CreateXML(control_tag As String) As String
         .setAttribute "id", ThisWorkbook.Name & "_" & module.Name
         .setAttribute "label", module.Name
         Select Case module.ImageType
-          Case TM_IMageTypeNone
+          Case XT_IMageTypeNone
             .setAttribute "imageMso", "MacrosGallery"
-          Case TM_ImageTypeInternal, TM_ImageTypeInternalAutomatic, TM_ImageTypeExternal
-            .setAttribute "getImage", "TM_SB_getImage"
-          Case TM_ImageTypeMso
+          Case XT_ImageTypeInternal, XT_ImageTypeInternalAutomatic, XT_ImageTypeExternal
+            .setAttribute "getImage", "XT_SB_getImage"
+          Case XT_ImageTypeMso
             .setAttribute "imageMso", module.Image
-          Case TM_ImageTypeEmbedded
+          Case XT_ImageTypeEmbedded
             .setAttribute "image", module.Image
         End Select
         Dim info As MacroInfo

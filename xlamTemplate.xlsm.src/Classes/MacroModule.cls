@@ -19,7 +19,7 @@ Public target        As String
 Private m_Image As String
 
 
-Private m_ImageType As TM_ImageType
+Private m_ImageType As XT_ImageType
 
 
 Private m_ProjectName As String
@@ -28,7 +28,7 @@ Private m_ProjectName As String
 Private Sub Class_Initialize()
   Set m_Macros = New Collection
   m_Image = "MacrosGallery"
-  m_ImageType = TM_IMageTypeNone
+  m_ImageType = XT_IMageTypeNone
 End Sub
 
 
@@ -66,11 +66,11 @@ End Property
 
 
 '@Description "モジュールのイメージ情報を保存"
-Public Property Get ImageType() As TM_ImageType
+Public Property Get ImageType() As XT_ImageType
   ImageType = m_ImageType
 End Property
 
-Public Property Let ImageType(ByVal Value As TM_ImageType)
+Public Property Let ImageType(ByVal Value As XT_ImageType)
   m_ImageType = Value
 End Property
 
@@ -182,16 +182,16 @@ Public Sub Parse(ByVal comp As VBComponent)
     If notEmpty And isModuleDefitinion Then
       Select Case True
       Case line Like "'*moduleImage:*" And isModuleDefitinion
-        Me.ImageType = TM_ImageTypeEmbedded
+        Me.ImageType = XT_ImageTypeEmbedded
         Me.Image = Trim(body)
       Case line Like "'*moduleImageMso:*" And isModuleDefitinion
-        Me.ImageType = TM_ImageTypeMso
+        Me.ImageType = XT_ImageTypeMso
         Me.Image = Trim(body)
       Case line Like "'*moduleInternalImage:*" And isModuleDefitinion
-        Me.ImageType = TM_ImageTypeInternal
+        Me.ImageType = XT_ImageTypeInternal
         Me.Image = Trim(body)
       Case line Like "'*moduleExternalImage:*" And isModuleDefitinion
-        Me.ImageType = TM_ImageTypeExternal
+        Me.ImageType = XT_ImageTypeExternal
         Me.Image = Trim(body)
       Case line Like "'*moduleTarget:*"
         Me.target = Trim(body)
@@ -211,16 +211,16 @@ Public Sub Parse(ByVal comp As VBComponent)
         info.target = Trim(body)
       Case line Like "'*imageMso:*"
         info.Image = Trim(body)
-        info.ImageType = TM_ImageTypeMso
+        info.ImageType = XT_ImageTypeMso
       Case line Like "'*image:*"
         info.Image = Trim(body)
-        info.ImageType = TM_ImageTypeEmbedded
+        info.ImageType = XT_ImageTypeEmbedded
       Case line Like "'*internalImage:*"
         info.Image = Trim(body)
-        info.ImageType = TM_ImageTypeInternal
+        info.ImageType = XT_ImageTypeInternal
       Case line Like "'*externalImage:*"
         info.Image = Trim(body)
-        info.ImageType = TM_ImageTypeExternal
+        info.ImageType = XT_ImageTypeExternal
       Case line Like "'*label:*"
         info.label = Trim(body)
       Case line Like "'*hidden:"
