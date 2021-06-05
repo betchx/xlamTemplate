@@ -407,7 +407,7 @@ End Function
 
 
 ' interface
-Public Sub ResetMenu(control As IRibbonControl)
+Public Sub RefreshMenu(control As IRibbonControl)
   Call InvaditateMenu
 End Sub
 
