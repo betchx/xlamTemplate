@@ -161,10 +161,10 @@ Private Function exportMacros() As Boolean
   For Each key In out_dirs
     out_dir = FSO.BuildPath(topDir, out_dirs(key))
     If FSO.FolderExists(out_dir) Then
-      Dim d As Scripting.Dictionary
+      Dim d As Scripting.Folder
       Set d = FSO.GetFolder(out_dir)
       Dim f As Scripting.File
-      For Each f In d
+      For Each f In d.Files
         f.Delete
       Next
     Else
