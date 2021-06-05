@@ -17,11 +17,7 @@ Public target        As String
 
 
 Private m_Image As String
-
-
 Private m_ImageType As XT_ImageType
-
-
 Private m_ProjectName As String
 
 
@@ -90,7 +86,6 @@ End Property
 Public Property Get Macros() As Collection
   Set Macros = m_Macros
 End Property
-
 
 
 '@Enumerator

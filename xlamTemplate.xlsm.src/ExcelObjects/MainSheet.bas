@@ -1,6 +1,7 @@
 '@IgnoreModule ModuleWithoutFolder
 Option Explicit
 
+
 ' hidden: True
 Sub SaveAsAddin()
   With ThisWorkbook
@@ -45,8 +46,8 @@ Sub マクロをエクスポート()
   End If
 End Sub
 
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Private Function AddinPath() As String
   AddinPath = FSO.BuildPath(Application.UserLibraryPath, FSO.GetBaseName(ThisWorkbook.Name) & ".xlam")
@@ -94,9 +95,11 @@ Private Function RubberDuckチェック() As Boolean
   End With
 End Function
 
+
 Private Function Escape(s As String) As String
   Escape = Replace(s, " ", "` ")
 End Function
+
 
 Private Function ExtractCustomUI() As Boolean
   With New IWshRuntimeLibrary.WshShell
@@ -132,7 +135,6 @@ Private Function ExtractCustomUI() As Boolean
   End With
   ExtractCustomUI = True
 End Function
-
 
 
 Private Function exportMacros() As Boolean

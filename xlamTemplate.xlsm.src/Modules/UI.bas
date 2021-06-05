@@ -12,10 +12,187 @@ Const last_xml_file As String = "latest.xml"
 'レジストリのセクション名
 Const sec          As String = "UI"
 Const SHORTCUT_SEC As String = "ShortCuts"
-'
-'=======================================================================================
-'
 
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''  Macros (Entry Points)
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'supertip: レジストリに登録されているショートカットの情報をカレントセル以降に書き出す．
+Sub ショートカットの情報をダンプ()
+  Dim data As Variant
+  data = GetAllSettings(ThisWorkbook.Name, SHORTCUT_SEC)
+
+  If IsEmpty(data) Then
+    MsgBox "ショートカットは登録されていません．", vbOKOnly, "確認"
+    ActiveCell.Value = "ショートカットは登録されていません"
+  Else
+    Dim rows As Long
+    rows = UBound(data, 1) - LBound(data, 1) + 1
+
+    Dim Dest As Range
+    Set Dest = ActiveCell.Resize(rows + 3, 2)
+    If WorksheetFunction.CountA(ActiveCell.Resize(rows + 3, 3)) > 0 Then
+      If MsgBox("情報が挿入される範囲内(" & rows & "x3)にデータがあります．上書きして良いですか？", vbYesNo + vbQuestion, "上書き確認") = vbNo Then Exit Sub
+      Dest.Clear
+    End If
+    ショートカットダンプのヘッダを書き出し
+    ActiveCell.Offset(2, 0).Resize(rows, 2) = data
+    ActiveCell.Offset(2, 2).FormulaR1C1 = "=IFError(VLookup(RC[-2],'[" & ThisWorkbook.Name & "]KeyList'!C1:C3, 3,False),""(なし)"")"
+    ActiveCell.Offset(2, 2).Resize(rows, 1).FillDown
+    ActiveCell.Offset(rows + 3, 1).Value = "(End)"
+    ショートカット編集後作業のコメントを追加
+  End If
+End Sub
+
+
+' label: ショートカットの情報をレジストリに保存
+' supertip: カレントセルを基準に，マクロを割り当てをレジストリに保存する．
+' supertip: カレントセルにショートカットキーの定義を，右隣のセルにマクロ名を入れる．
+' supertip: 無効なデータの場合は，セルの背景が赤になる．
+' supertip: 同様にして次の行以降もキー定義のセルが空になるまで順次繰り返す．
+' supertip: 既存の情報は削除せず，追加となる．
+' supertip: 割り当てを削除したい場合は，マクロ名を空欄にして実行する．
+Sub ショートカットの情報を保存()
+  Dim r As Range
+  Dim key As String
+  Dim macro As String
+  Dim APP As String
+  APP = ThisWorkbook.Name
+
+  Set r = ActiveCell
+  Do While r.Value <> ""
+    key = r.Value
+    If Left$(key, 1) = "'" Then key = Mid$(key, 2)
+    macro = r.Offset(0, 1).Value
+    If macro = "" Then
+      On Error Resume Next
+      DeleteSetting APP, SHORTCUT_SEC, key
+      On Error GoTo 0
+      r.Interior.color = RGB(0, 255, 0)
+    Else
+      If Left$(macro, 1) = "'" Then macro = Mid$(macro, 2)
+      If isKeyValid(key) And macroTree.hasMacro(UCase$(macro)) Then
+        SaveSetting APP, SHORTCUT_SEC, normalizedKey(key), macro
+        r.Interior.ColorIndex = 24
+      Else
+        If Not isKeyValid(key) Then r.Interior.color = RGB(255, 0, 0)
+        If Not macroTree.hasMacro(UCase$(macro)) Then r.Offset(0, 1).Interior.color = RGB(255, 0, 0)
+      End If
+    End If
+    Set r = r.Offset(1, 0)
+  Loop
+End Sub
+
+
+' supertip: レジストリに保存されている情報をもとに，ショートカットキーをマクロに割り当てる．
+Sub ショートカットの割り当て()
+  Dim data As Variant
+  data = GetAllSettings(ThisWorkbook.Name, SHORTCUT_SEC)
+  If Not IsEmpty(data) Then
+    Dim i As Long
+    For i = LBound(data, 1) To UBound(data, 1)
+      Application.onKey data(i, 0), data(i, 1)
+    Next
+  End If
+End Sub
+
+
+' supertip: レジストリから登録したショートカットキーを無効にし，エクセルのデフォルトの挙動に戻す．
+Sub ショートカットの解除()
+  Dim data As Variant
+  data = GetAllSettings(ThisWorkbook.Name, SHORTCUT_SEC)
+  If Not IsEmpty(data) Then
+    Dim i As Long
+    For i = LBound(data, 1) To UBound(data, 1)
+      Application.onKey data(i, 0)    '第2引数を省略して，デフォルトに戻す．
+    Next
+  End If
+End Sub
+
+
+' supertip: メニューから呼び出すことのできる全マクロを一覧にして新しいシートに出力する．
+Sub マクロ一覧をダンプ()
+  If macroTree Is Nothing Then initTree
+
+  Dim r As Range
+  If ActiveWorkbook.Name = ThisWorkbook.Name Then
+    Set r = ActiveCell
+  Else
+    With ObtainSheet("Macro一覧")
+      .Activate
+      Set r = .Range("A1")
+    End With
+  End If
+
+  Dim num_macro As Long
+  num_macro = macroTree.MacroCount
+
+  Dim caption As Variant
+  caption = Array("#", "name", "id", "project", "module", "tag", "label", "category", "screenTip", "superTip", "desc", "image", "imageType")
+
+  Dim num_item As Long
+  num_item = UBound(caption)
+
+  Dim data() As Variant
+  ReDim data(0 To num_macro, 0 To num_item)
+
+  Dim col As Long
+  For col = 0 To num_item
+    data(0, col) = caption(col)
+  Next
+
+  Dim row As Long
+  row = 0
+
+  Dim key As Variant
+  For Each key In macroTree.MacroNames
+    Dim info As MacroInfo
+    Set info = macroTree.macro(key)
+    row = row + 1
+    For col = 0 To num_item
+      Select Case caption(col)
+        Case "#"
+          data(row, col) = row
+        Case "name"
+          data(row, col) = info.Name
+        Case "id"
+          data(row, col) = info.id
+        Case "project"
+          data(row, col) = info.ProjectName
+        Case "module"
+          data(row, col) = info.module
+        Case "tag"
+          data(row, col) = info.tag
+        Case "label"
+          data(row, col) = info.label
+        Case "category"
+          data(row, col) = info.category
+        Case "screenTip"
+          data(row, col) = info.screenTip
+        Case "superTip"
+          data(row, col) = info.superTip
+        Case "desc"
+          data(row, col) = info.desc
+        Case "image"
+          data(row, col) = info.Image
+        Case "imageType"
+          data(row, col) = info.imageTypeString
+        Case Else
+          Debug.Assert False
+      End Select
+    Next
+  Next
+
+  r.Resize(num_macro + 1, num_item) = data
+End Sub
+
+
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''  Callbacks
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Public Sub UI_onLoad(ByRef iRibbon As IRibbonUI)
   Set Ribbon.Item = iRibbon
@@ -109,35 +286,6 @@ Public Sub XT_SB_onAction(control As IRibbonControl)
 End Sub
 
 
-' 引数tagから MacroInfoを取得する．
-' tagが数字の場合は，レジストリからマクロ名を取得する．
-' tagの先頭1文字が数字の場合はそれを無視して検索する．
-' 数字以外から始まる場合は，マクロ名とみなして検索する．
-Private Function getInfo(ByVal tag As String) As MacroInfo
-  If macroTree Is Nothing Then initTree
-
-  Dim s            As String
-  If tag = "" Then
-    s = ""
-  ElseIf tag Like "##" Then
-    s = GetSetting(APP, sec, tag, "")
-  ElseIf InStr("0123456789", Left$(tag, 1)) > 0 Then
-    s = Mid$(tag, 2)
-  Else
-    s = tag
-  End If
-
-  If macroTree.hasMacro(s) Then
-    Set getInfo = macroTree.macro(s)
-  Else
-    Set getInfo = New MacroInfo
-    If 履歴のクリーンアップ() Then
-      Call InvaditateMenu
-    End If
-  End If
-End Function
-
-
 ' 呼び出し元のリボンコントロールのもつタグをもとにマクロを呼び出す
 Sub CallByTag(control As IRibbonControl)
   Dim num          As String
@@ -169,6 +317,46 @@ Sub CallByTag(control As IRibbonControl)
     End If
   End If
 End Sub
+
+
+' メニューの作り直し
+Public Sub RefreshMenu(control As IRibbonControl)
+  Call InvaditateMenu
+End Sub
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''   Private routines and functions
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+' 引数tagから MacroInfoを取得する．
+' tagが数字の場合は，レジストリからマクロ名を取得する．
+' tagの先頭1文字が数字の場合はそれを無視して検索する．
+' 数字以外から始まる場合は，マクロ名とみなして検索する．
+Private Function getInfo(ByVal tag As String) As MacroInfo
+  If macroTree Is Nothing Then initTree
+
+  Dim s            As String
+  If tag = "" Then
+    s = ""
+  ElseIf tag Like "##" Then
+    s = GetSetting(APP, sec, tag, "")
+  ElseIf InStr("0123456789", Left$(tag, 1)) > 0 Then
+    s = Mid$(tag, 2)
+  Else
+    s = tag
+  End If
+
+  If macroTree.hasMacro(s) Then
+    Set getInfo = macroTree.macro(s)
+  Else
+    Set getInfo = New MacroInfo
+    If 履歴のクリーンアップ() Then
+      Call InvaditateMenu
+    End If
+  End If
+End Function
+
 
 
 'インターフェースの変換
@@ -406,12 +594,6 @@ Private Function 履歴のクリーンアップ() As Boolean
 End Function
 
 
-' interface
-Public Sub RefreshMenu(control As IRibbonControl)
-  Call InvaditateMenu
-End Sub
-
-
 ' リボンを無効化して，メニューを再構築する．
 Private Sub InvaditateMenu()
   If Ribbon.Item Is Nothing Then
@@ -453,73 +635,6 @@ Private Sub loadShortcutKeys()
       End If
     Next
   End If
-End Sub
-
-
-'supertip: レジストリに登録されているショートカットの情報をカレントセル以降に書き出す．
-Sub ショートカットの情報をダンプ()
-  Dim data As Variant
-  data = GetAllSettings(ThisWorkbook.Name, SHORTCUT_SEC)
-
-  If IsEmpty(data) Then
-    MsgBox "ショートカットは登録されていません．", vbOKOnly, "確認"
-    ActiveCell.Value = "ショートカットは登録されていません"
-  Else
-    Dim rows As Long
-    rows = UBound(data, 1) - LBound(data, 1) + 1
-
-    Dim Dest As Range
-    Set Dest = ActiveCell.Resize(rows + 3, 2)
-    If WorksheetFunction.CountA(ActiveCell.Resize(rows + 3, 3)) > 0 Then
-      If MsgBox("情報が挿入される範囲内(" & rows & "x3)にデータがあります．上書きして良いですか？", vbYesNo + vbQuestion, "上書き確認") = vbNo Then Exit Sub
-      Dest.Clear
-    End If
-    ショートカットダンプのヘッダを書き出し
-    ActiveCell.Offset(2, 0).Resize(rows, 2) = data
-    ActiveCell.Offset(2, 2).FormulaR1C1 = "=IFError(VLookup(RC[-2],'[" & ThisWorkbook.Name & "]KeyList'!C1:C3, 3,False),""(なし)"")"
-    ActiveCell.Offset(2, 2).Resize(rows, 1).FillDown
-    ActiveCell.Offset(rows + 3, 1).Value = "(End)"
-    ショートカット編集後作業のコメントを追加
-  End If
-End Sub
-
-
-' label: ショートカットの情報をレジストリに保存
-' supertip: カレントセルを基準に，マクロを割り当てをレジストリに保存する．
-' supertip: カレントセルにショートカットキーの定義を，右隣のセルにマクロ名を入れる．
-' supertip: 無効なデータの場合は，セルの背景が赤になる．
-' supertip: 同様にして次の行以降もキー定義のセルが空になるまで順次繰り返す．
-' supertip: 既存の情報は削除せず，追加となる．
-' supertip: 割り当てを削除したい場合は，マクロ名を空欄にして実行する．
-Sub ショートカットの情報を保存()
-  Dim r As Range
-  Dim key As String
-  Dim macro As String
-  Dim APP As String
-  APP = ThisWorkbook.Name
-
-  Set r = ActiveCell
-  Do While r.Value <> ""
-    key = r.Value
-    If Left$(key, 1) = "'" Then key = Mid$(key, 2)
-    macro = r.Offset(0, 1).Value
-    If macro = "" Then
-      On Error Resume Next
-      DeleteSetting APP, SHORTCUT_SEC, key
-      On Error GoTo 0
-      r.Interior.color = RGB(0, 255, 0)
-    Else
-      If Left$(macro, 1) = "'" Then macro = Mid$(macro, 2)
-      If isKeyValid(key) And macroTree.hasMacro(UCase$(macro)) Then
-        SaveSetting APP, SHORTCUT_SEC, normalizedKey(key), macro
-        r.Interior.ColorIndex = 24
-      Else
-        If Not isKeyValid(key) Then r.Interior.color = RGB(255, 0, 0)
-        If Not macroTree.hasMacro(UCase$(macro)) Then r.Offset(0, 1).Interior.color = RGB(255, 0, 0)
-      End If
-    End If
-    Set r = r.Offset(1, 0)
-  Loop
 End Sub
 
 
@@ -590,33 +705,6 @@ Private Function FormatShortcutKey(key As String) As String
 End Function
 
 
-
-' supertip: レジストリに保存されている情報をもとに，ショートカットキーをマクロに割り当てる．
-Sub ショートカットの割り当て()
-  Dim data As Variant
-  data = GetAllSettings(ThisWorkbook.Name, SHORTCUT_SEC)
-  If Not IsEmpty(data) Then
-    Dim i As Long
-    For i = LBound(data, 1) To UBound(data, 1)
-      Application.onKey data(i, 0), data(i, 1)
-    Next
-  End If
-End Sub
-
-
-' supertip: レジストリから登録したショートカットキーを無効にし，エクセルのデフォルトの挙動に戻す．
-Sub ショートカットの解除()
-  Dim data As Variant
-  data = GetAllSettings(ThisWorkbook.Name, SHORTCUT_SEC)
-  If Not IsEmpty(data) Then
-    Dim i As Long
-    For i = LBound(data, 1) To UBound(data, 1)
-      Application.onKey data(i, 0)    '第2引数を省略して，デフォルトに戻す．
-    Next
-  End If
-End Sub
-
-
 Private Sub ショートカットダンプのヘッダを書き出し()
   ActiveCell.Value = "キー"
   ActiveCell.AddComment "Ctrl: ^" & vbCrLf & _
@@ -648,84 +736,6 @@ NoSheet:
   Set ObtainSheet = ActiveWorkbook.Worksheets.Add()
   ObtainSheet.Name = sheet_name
 End Function
-
-
-' supertip: メニューから呼び出すことのできる全マクロを一覧にして新しいシートに出力する．
-'
-Sub マクロ一覧をダンプ()
-  If macroTree Is Nothing Then initTree
-
-  Dim r As Range
-  If ActiveWorkbook.Name = ThisWorkbook.Name Then
-    Set r = ActiveCell
-  Else
-    With ObtainSheet("Macro一覧")
-      .Activate
-      Set r = .Range("A1")
-    End With
-  End If
-
-  Dim num_macro As Long
-  num_macro = macroTree.MacroCount
-
-  Dim caption As Variant
-  caption = Array("#", "name", "id", "project", "module", "tag", "label", "category", "screenTip", "superTip", "desc", "image", "imageType")
-
-  Dim num_item As Long
-  num_item = UBound(caption)
-
-  Dim data() As Variant
-  ReDim data(0 To num_macro, 0 To num_item)
-
-  Dim col As Long
-  For col = 0 To num_item
-    data(0, col) = caption(col)
-  Next
-
-  Dim row As Long
-  row = 0
-
-  Dim key As Variant
-  For Each key In macroTree.MacroNames
-    Dim info As MacroInfo
-    Set info = macroTree.macro(key)
-    row = row + 1
-    For col = 0 To num_item
-      Select Case caption(col)
-        Case "#"
-          data(row, col) = row
-        Case "name"
-          data(row, col) = info.Name
-        Case "id"
-          data(row, col) = info.id
-        Case "project"
-          data(row, col) = info.ProjectName
-        Case "module"
-          data(row, col) = info.module
-        Case "tag"
-          data(row, col) = info.tag
-        Case "label"
-          data(row, col) = info.label
-        Case "category"
-          data(row, col) = info.category
-        Case "screenTip"
-          data(row, col) = info.screenTip
-        Case "superTip"
-          data(row, col) = info.superTip
-        Case "desc"
-          data(row, col) = info.desc
-        Case "image"
-          data(row, col) = info.Image
-        Case "imageType"
-          data(row, col) = info.imageTypeString
-        Case Else
-          Debug.Assert False
-      End Select
-    Next
-  Next
-
-  r.Resize(num_macro + 1, num_item) = data
-End Sub
 
 
 
