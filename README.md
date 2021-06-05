@@ -1,5 +1,5 @@
 # xlamTemplate
-A kemplate of Excel VBA addin file with automatic menu etc 
+A template of Excel VBA addin file with automatic menu etc.
 
 ## Feature
 Add easy Access to created macros.
@@ -10,7 +10,7 @@ Special comments before subroutine definition provide follows:
 *  Customized icon
 *  Customized Caption
 *  Tooltips
-*  Visivility
+*  Visibility
 *  Context based Visibility
 
 #### Customized Icon
@@ -24,18 +24,17 @@ Macro name is used for button caption as default.
 
 #### Tooltips
 Two type tooltips can be added.
-"' screentip:" adds comment into upper side of tooltip. (defaukt: name of Macro)
-"' supertip:" adds comments into lower side od tooltip. (default: none) 
+"' screentip:" adds comment into upper side of tooltip. (default: name of Macro)
+"' supertip:" adds comments into lower side od tooltip. (default: none)
 
-#### Visivility
+#### Visibility
 Non-private subroutines without any argument will be added into the dynamic menus.
-"' hidden:" can suppress this behaviour for next subroutine even if it is no-argument non-pubkic sybroutine.
+"' hidden:" can suppress this behavior for next subroutine even if it is no-argument non-public subroutine.
 
-#### Context based visivility
-"' target: TYPE" can limit the visivility of button and menu by selection.
+#### Context based visibility
+"' target: TYPE" can limit the visibility of button and menu by selection.
 Following macro will be shown only if any of selection and its parent is TYPE.
 The TYPE is usually Range, Chart or Shape.
-
 
 ### Exporting code
 
@@ -60,6 +59,7 @@ Microsoft ExcelのVBAアドイン開発者用テンプレート
 * ツールチップの追加
 * 可視性
 * 選択表示
+
 ほかにもあるが，詳細は仕様書を参照．
 
 #### アイコンの変更
