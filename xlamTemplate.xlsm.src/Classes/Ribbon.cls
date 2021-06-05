@@ -3,11 +3,7 @@
 '@Folder RibbonUI
 Option Explicit
 
-#If VBA7 And Win64 Then
-  Private Declare PtrSafe Sub MoveMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDest As Any, ByRef pSrc As Any, ByVal cbLen As LongPtr)
-#Else
-  Private Declare Sub MoveMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDest As Any, ByRef pSrc As Any, ByVal cbLen As Long)
-#End If
+Private Declare PtrSafe Sub MoveMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDest As Any, ByRef pSrc As Any, ByVal cbLen As LongPtr)
 
 Private gRibbon    As Office.IRibbonUI
 Const sec          As String = "UI"

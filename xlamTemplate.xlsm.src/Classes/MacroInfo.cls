@@ -13,21 +13,17 @@ Enum XT_ImageType
   XT_ImageTypeExternal    '外部ファイル名の場合
 End Enum
 
-
 '@Ignore EncapsulatePublicField
 '@VariableDescription ボタンやメニューに登録されるときのID.
 Public id          As String
-
 
 '@Ignore EncapsulatePublicField
 '@VariableDescription マクロが定義されているプロジェクト(オフィスファイル)の名前
 Public ProjectName As String
 
-
 '@Ignore EncapsulatePublicField
 '@VariableDescription マクロが定義されているモジュールの名前
 Public module      As String
-
 
 '@Ignore EncapsulatePublicField
 '@VariableDescription マウスをホバーした時に表示されるツールチップの上側に表示される太字の文字列．
@@ -60,7 +56,6 @@ Public ImageType  As XT_ImageType
 '@Ignore EncapsulatePublicField
 '@VariableDescription ラベル文字列．省略された場合はnameが使用される．
 Public label       As String
-
 
 '@Ignore EncapsulatePublicField
 '@VariableDescription メニューに表示する場合のカテゴリ．サブメニューとして使われる．
